@@ -1,38 +1,9 @@
-trait JValueImpl {
+use std::fmt;
+use strum_macros;
 
-    fn dump(&self) {}
-}
-
-struct JObject {
-    
-}
-
-struct JArray {
-
-}
-
-struct JValue {
-
-}
-
-impl JValueImpl for JObject {
-    fn dump(&self) {
-        println!("JObject")
-    }
-}
-
-impl JValueImpl for JArray {
-    fn dump(&self) {
-        println!("JArray")
-    }
-}
-
-impl JValueImpl for JValue {
-    fn dump(&self) {
-        println!("JValue")
-    }
-}
-
+#[derive(Debug)]
+#[derive(PartialEq)]
+#[derive(strum_macros::Display)]
 enum ValueKind {
     Object,
     Array,
@@ -54,13 +25,56 @@ enum ParseState {
     Value
 }
 
+trait JValueImpl {
+
+    fn dump(&self) {}
+}
+
+struct JObject {
+    
+}
+
+struct JArray {
+
+}
+
+struct JValue {
+    kind: ValueKind
+}
+
+impl JValueImpl for JObject {
+    fn dump(&self) {
+        println!("JObject")
+    }
+}
+
+impl JValueImpl for JArray {
+    fn dump(&self) {
+        println!("JArray")
+    }
+}
+
+impl JValueImpl for JValue {
+    fn dump(&self) {
+        println!("JValue {}", self.kind);
+    }
+}
+
+
+
 fn peek_type (input: &str, offset: usize) -> ValueKind {
     match input.chars().nth(offset).unwrap() {
         '{' => { return ValueKind::Object }
         '[' => { return ValueKind::Array; }
         'n' => { 
             match &input[offset..4] {
-                "null" => { ValueKind::Null; }
+                "null" => { return ValueKind::Null; }
+                &_ => { }
+            }
+        }
+        'u' => { 
+            match &input[offset..9] {
+                "undefined" => { return ValueKind::Undefined; }
                 &_ => { }
             }
         }
@@ -97,7 +111,9 @@ fn parse (input: &str, offset: usize) -> Box<dyn JValueImpl> {
             ParseState::ObjectKey => todo!(),
             ParseState::ObjectValue => todo!(),
             ParseState::Array => todo!(),
-            ParseState::Value => todo!(),
+            ParseState::Value => {
+                print!("null")
+            },
         }
     }
 
@@ -105,9 +121,29 @@ fn parse (input: &str, offset: usize) -> Box<dyn JValueImpl> {
 }
 
 fn main() {
-    let r = parse("{ a: 134 }", 0);
+//    let r = parse("{ a: 134 }", 0);
+    let r = parse("null", 0);
 
     r.dump();
 
     println!("Hello, world!");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_peek_type() {
+        assert!(peek_type("null", 0) == ValueKind::Null);
+        assert!(peek_type("undefined", 0) == ValueKind::Undefined);
+        assert!(peek_type("{", 0) == ValueKind::Object);
+        assert!(peek_type("[", 0) == ValueKind::Array);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_peek_type() {
+        peek_type("noll", 0);
+    }
 }
